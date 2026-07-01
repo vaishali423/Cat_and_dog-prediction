@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teachable Machine Image Input</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        img { max-width: 300px; margin-top: 20px; }
+        .prediction { margin-top: 20px; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <h1>Teachable Machine Image Classifier</h1>
+    <input type="file" id="imageUpload" accept="image/*">
+    <br>
+    <img id="preview" alt="Preview will appear here">
+    <div class="prediction" id="predictionResult"></div>
+
+    <script>
+        const modelURL = "https://teachablemachine.withgoogle.com/models/8TUJX8Y9O/"; // Change to your model folder path
+        let model;
+
+        // Load the model
+        async function init() {
+            try {
+                model = await tmImage.load(modelURL + "model.json", modelURL + "metadata.json");
+                console.log("Model loaded successfully");
+            } catch (err) {
+                console.error("Error loading model:", err);
+                document.getElementById("predictionResult").innerText = "Failed to load model.";
+            }
+        }
+
+        // Handle image upload
+        document.getElementById("imageUpload").addEventListener("change", async function (event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Preview the image
+            const imgElement = document.getElementById("preview");
+            imgElement.src = URL.createObjectURL(file);
+
+            // Wait for image to load before prediction
+            imgElement.onload = async () => {
+                if (!model) {
+                    document.getElementById("predictionResult").innerText = "Model not loaded yet.";
+                    return;
+                }
+                try {
+                    const prediction = await model.predict(imgElement);
+                    // Sort predictions by probability
+                    prediction.sort((a, b) => b.probability - a.probability);
+                    document.getElementById("predictionResult").innerHTML =
+                        `Prediction: <b>${prediction[0].className}</b> (${(prediction[0].probability * 100).toFixed(2)}%)`;
+                } catch (err) {
+                    console.error("Prediction error:", err);
+                    document.getElementById("predictionResult").innerText = "Prediction failed.";
+                }
+            };
+        });
+
+        init();
+    </script>
+</body>
+</html>
